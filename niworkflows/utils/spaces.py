@@ -139,6 +139,10 @@ class Reference:
 
     _standard_spaces = tuple(_tfapi.templates())
 
+    _surface_spaces = tuple({space.entities['template'] for space
+                             in _tfapi.TF_LAYOUT.get(extension='.surf.gii')})
+    _surface_spaces += ('fsnative',)
+
     space = attr.ib(default=None, type=str)
     """Name designating this space."""
     spec = attr.ib(
@@ -165,7 +169,7 @@ class Reference:
                 spec["den"] = FSAVERAGE_DENSITY[space]
                 object.__setattr__(self, "spec", spec)
 
-        if self.space.startswith("fs"):
+        if self.space in self._surface_spaces:
             object.__setattr__(self, "dim", 2)
 
         if self.space in self._standard_spaces:
@@ -679,7 +683,7 @@ class SpatialReferences:
         return [
             s.legacyname or s.space
             for s in self.references
-            if s.legacyname or s.space == "fsnative"
+            if s.legacyname or s.space in s._surface_spaces
         ]
 
 
@@ -696,7 +700,7 @@ class OutputReferencesAction(argparse.Action):
             val = val.rstrip(":")
             if (
                 val not in NONSTANDARD_REFERENCES
-                and not val.split(":")[0].startswith("fs")
+                and not val.split(":")[0] in Reference._surface_spaces
                 and ":res-" not in val
                 and ":resolution-" not in val
             ):
